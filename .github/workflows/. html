@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Chat Interface</title>
+    
+    <!-- Tải Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tải Font Inter từ Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- CSS tùy chỉnh -->
+    <style>
+        /* Sử dụng font Inter cho toàn bộ trang */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Tùy chỉnh thanh cuộn cho đẹp hơn */
+        #chat-window::-webkit-scrollbar {
+            width: 6px;
+        }
+        #chat-window::-webkit-scrollbar-track {
+            background: #2d3748; /* dark-gray-800 */
+        }
+        #chat-window::-webkit-scrollbar-thumb {
+            background: #4a5568; /* dark-gray-600 */
+            border-radius: 3px;
+        }
+        #chat-window::-webkit-scrollbar-thumb:hover {
+            background: #718096; /* dark-gray-500 */
+        }
+
+        /* Animation cho tin nhắn xuất hiện */
+        .chat-bubble {
+            animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-origin: bottom left;
+        }
+        
+        @keyframes pop-in {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        
+        /* Hiệu ứng chấm gõ phím */
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background-color: #9ca3af;
+            border-radius: 50%;
+            display: inline-block;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-of-type(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-of-type(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+
+        /* Đảm bảo textarea không bị thay đổi kích thước thủ công */
+        textarea {
+            resize: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col h-screen">
+
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 p-4 shadow-md flex items-center">
+        <div class="w-10 h-10 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+            </svg>
+        </div>
+        <div>
+            <h1 class="text-xl font-bold">Gemini Chat</h1>
+            <p class="text-sm text-green-400">● Online</p>
+        </div>
+    </header>
+
+    <!-- Khu vực hiển thị chat -->
+    <main id="chat-window" class="flex-1 p-4 md:p-6 overflow-y-auto space-y-6">
+        <!-- Tin nhắn chào mừng ban đầu -->
+        <div class="chat-bubble flex items-start gap-3">
+            <div class="w-10 h-10 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                </svg>
+            </div>
+            <div class="bg-gray-700 rounded-lg rounded-tl-none p-4 max-w-lg">
+                <p class="text-sm md:text-base">Xin chào! Tôi là Gemini. Bạn cần tôi giúp gì hôm nay?</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Khu vực nhập tin nhắn -->
+    <footer class="bg-gray-800 border-t border-gray-700 p-4">
+        <form id="chat-form" class="flex items-center space-x-3">
+            <textarea id="message-input" class="flex-1 bg-gray-700 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Nhập tin nhắn của bạn..." rows="1"></textarea>
+            <button type="submit" id="send-button" class="bg-blue-600 hover:bg-blue-700 transition-colors duration-200 text-white font-bold p-3 rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                </svg>
+            </button>
+        </form>
+        <p class="text-xs text-center text-gray-500 mt-2">Được hỗ trợ bởi Google Gemini. Giao diện được thiết kế bởi Gemini.</p>
+    </footer>
+
+    <script>
+        const chatWindow = document.getElementById('chat-window');
+        const chatForm = document.getElementById('chat-form');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+
+        let chatHistory = []; // Lưu trữ lịch sử trò chuyện
+
+        // Tự động điều chỉnh chiều cao của textarea
+        messageInput.addEventListener('input', () => {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = (messageInput.scrollHeight) + 'px';
+        });
+        
+        // Gửi tin nhắn khi nhấn Enter, và xuống dòng bằng Shift + Enter
+        messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                chatForm.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Xử lý khi gửi form
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userMessage = messageInput.value.trim();
+            if (!userMessage) return;
+
+            // Thêm tin nhắn của người dùng vào giao diện
+            addMessageToUI(userMessage, 'user');
+            
+            // Xóa nội dung input và reset chiều cao
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            // Hiển thị chỉ báo đang gõ
+            showTypingIndicator();
+            
+            // Thêm tin nhắn người dùng vào lịch sử
+            chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
+
+            try {
+                // Gọi API của Gemini
+                const payload = { 
+                    contents: chatHistory,
+                    // Cấu hình an toàn để tránh chặn nội dung
+                    safetySettings: [
+                        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+                    ],
+                };
+                const apiKey = ""; // API key được xử lý tự động trong môi trường Canvas
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                let botMessage = "Rất tiếc, tôi không thể xử lý yêu cầu này."; // Tin nhắn mặc định
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    botMessage = result.candidates[0].content.parts[0].text;
+                } else if (result.promptFeedback && result.promptFeedback.blockReason) {
+                    // Xử lý trường hợp nội dung bị chặn
+                    botMessage = `Yêu cầu của bạn đã bị chặn vì lý do: ${result.promptFeedback.blockReason}. Vui lòng thử lại với một câu hỏi khác.`;
+                }
+
+                // Thêm tin nhắn của Gemini vào lịch sử
+                chatHistory.push({ role: "model", parts: [{ text: botMessage }] });
+
+                // Xóa chỉ báo đang gõ và hiển thị tin nhắn của bot
+                hideTypingIndicator();
+                addMessageToUI(botMessage, 'bot');
+
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                hideTypingIndicator();
+                addMessageToUI("Đã có lỗi xảy ra khi kết nối tới Gemini. Vui lòng thử lại.", 'bot');
+            }
+        });
+
+        // Hàm thêm tin nhắn vào giao diện
+        function addMessageToUI(message, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('chat-bubble', 'flex', 'items-start', 'gap-3');
+
+            if (sender === 'user') {
+                messageElement.classList.add('justify-end');
+                messageElement.innerHTML = `
+                    <div class="bg-blue-600 rounded-lg rounded-br-none p-4 max-w-lg order-1">
+                        <p class="text-sm md:text-base">${message}</p>
+                    </div>
+                    <div class="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0 order-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    </div>
+                `;
+            } else { // sender === 'bot'
+                messageElement.innerHTML = `
+                    <div class="w-10 h-10 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                        </svg>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg rounded-tl-none p-4 max-w-lg">
+                        <p class="text-sm md:text-base">${message}</p>
+                    </div>
+                `;
+            }
+            chatWindow.appendChild(messageElement);
+            chatWindow.scrollTop = chatWindow.scrollHeight; // Tự động cuộn xuống cuối
+        }
+
+        // Hàm hiển thị chỉ báo đang gõ
+        function showTypingIndicator() {
+            const indicatorElement = document.createElement('div');
+            indicatorElement.id = 'typing-indicator';
+            indicatorElement.classList.add('chat-bubble', 'flex', 'items-start', 'gap-3');
+            indicatorElement.innerHTML = `
+                <div class="w-10 h-10 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                    </svg>
+                </div>
+                <div class="bg-gray-700 rounded-lg rounded-tl-none p-4 max-w-lg flex items-center">
+                    <div class="typing-indicator">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            `;
+            chatWindow.appendChild(indicatorElement);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // Hàm ẩn chỉ báo đang gõ
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+    </script>
+</body>
+</html>
+  
